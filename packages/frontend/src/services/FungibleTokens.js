@@ -35,11 +35,11 @@ export default class FungibleTokens {
 
     static async checkRegistration({ contractName, accountId }) {
         try {
-            return await this.viewFunctionAccount.viewFunction(
-                contractName,
-                'check_registration',
-                { account_id: accountId }
-            );
+            return await this.viewFunctionAccount.viewFunction({
+                contractId: contractName,
+                methodName: 'check_registration',
+                args: { account_id: accountId },
+            });
         } catch {
             return null;
         }
@@ -73,25 +73,30 @@ export default class FungibleTokens {
     }
 
     static async getStorageBalance({ contractName, accountId }) {
-        return await this.viewFunctionAccount.viewFunction(
-            contractName,
-            'storage_balance_of',
-            { account_id: accountId }
-        );
+        return await this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'storage_balance_of',
+            args: { account_id: accountId },
+        });
     }
 
     static async getMetadata({ contractName }) {
         return await queryClient.fetchQuery({
             queryKey: ['getMetadata', contractName],
             queryFn: () =>
-                this.viewFunctionAccount.viewFunction(contractName, 'ft_metadata'),
+                this.viewFunctionAccount.viewFunction({
+                    contractId: contractName,
+                    methodName: 'ft_metadata',
+                }),
             staleTime: Infinity,
         });
     }
 
     static async getBalanceOf({ contractName, accountId }) {
-        return this.viewFunctionAccount.viewFunction(contractName, 'ft_balance_of', {
-            account_id: accountId,
+        return this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'ft_balance_of',
+            args: { account_id: accountId },
         });
     }
 

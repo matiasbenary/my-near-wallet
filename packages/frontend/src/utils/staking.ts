@@ -91,9 +91,12 @@ export async function getStakingDeposits(accountId: string) {
     let validatorWithBalance = await Promise.all(
         validatorIds.map(async (validatorId) => {
             const balance = await account
-                .viewFunction(validatorId, 'get_account_total_balance', {
-                    account_id: accountId,
+                .viewFunction({
+                    contractId: validatorId,
+                    methodName: 'get_account_staked_balance',
+                    arg: { account_id: accountId },
                 })
+
                 .catch((err) => {
                     if (
                         // Means the validators  don't have contract deployed, or don't support staking

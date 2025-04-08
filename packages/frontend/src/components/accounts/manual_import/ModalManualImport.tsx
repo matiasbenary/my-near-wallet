@@ -15,6 +15,7 @@ import {
     refreshAccount,
 } from '../../../redux/actions/account';
 import { EWalletImportInputType } from './type';
+import { KeyPairString } from 'near-api-js/lib/utils';
 
 type Props = {
     importType: EWalletImportInputType;
@@ -40,7 +41,7 @@ export const ModalManualImport = ({ importType, isVisible, setVisible }: Props) 
         } else if (privateKey && importType === EWalletImportInputType.PRIVATE_KEY) {
             try {
                 const keyPair = nearApiJs.KeyPair.fromString(
-                    privateKey
+                    privateKey as KeyPairString
                 ) as nearApiJs.utils.KeyPairEd25519;
                 return keyPair.publicKey.toString();
             } catch (err) {

@@ -244,8 +244,10 @@ class FungibleTokenExchange {
         const { accountId } = account;
 
         for (const id of tokenIds) {
-            const tokenStorage = await account.viewFunction(id, 'storage_balance_of', {
-                account_id: accountId,
+            const tokenStorage = await account.viewFunction({
+                contractId: id,
+                methodName: 'storage_balance_of',
+                args: { account_id: accountId },
             });
 
             if (!tokenStorage) {

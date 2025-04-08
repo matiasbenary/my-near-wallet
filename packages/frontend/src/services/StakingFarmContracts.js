@@ -23,22 +23,42 @@ export default class StakingFarmContracts {
     );
 
     static getFarms({ contractName, from_index, limit }) {
-        return this.viewFunctionAccount.viewFunction(contractName, 'get_farms', {
-            from_index,
-            limit,
+        return this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'get_farms',
+            args: {
+                from_index,
+                limit,
+            },
         });
     }
 
     static getPoolSummary({ contractName }) {
-        return this.viewFunctionAccount.viewFunction(contractName, 'get_pool_summary');
+        return this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'get_pool_summary',
+        });
     }
 
     static getUnclaimedRewards({ contractName, account_id, farm_id }) {
-        return this.viewFunctionAccount.viewFunction(
-            contractName,
-            'get_unclaimed_reward',
-            { account_id, farm_id }
-        );
+        return this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'get_unclaimed_reward',
+            args: {
+                account_id,
+                farm_id,
+            },
+        });
+    }
+
+    static getFarm({ contractName, farm_id }) {
+        return this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'get_farm',
+            args: {
+                farm_id,
+            },
+        });
     }
 
     static getFarmListWithUnclaimedRewards = async ({

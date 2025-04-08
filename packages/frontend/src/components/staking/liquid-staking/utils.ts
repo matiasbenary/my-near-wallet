@@ -14,16 +14,16 @@ export async function getMetapoolValidator({
         accountId,
     });
 
-    const unstakedBalanceAsync = FungibleTokens.viewFunctionAccount.viewFunction(
-        METAPOOL_CONTRACT_ID,
-        'get_account_unstaked_balance',
-        { account_id: accountId }
-    );
-    const unstakedStatusAsync = FungibleTokens.viewFunctionAccount.viewFunction(
-        METAPOOL_CONTRACT_ID,
-        'is_account_unstaked_balance_available',
-        { account_id: accountId }
-    );
+    const unstakedBalanceAsync = FungibleTokens.viewFunctionAccount.viewFunction({
+        contractId: METAPOOL_CONTRACT_ID,
+        methodName: 'get_account_unstaked_balance',
+        args: { account_id: accountId },
+    });
+    const unstakedStatusAsync = FungibleTokens.viewFunctionAccount.viewFunction({
+        contractId: METAPOOL_CONTRACT_ID,
+        methodName: 'is_account_unstaked_balance_available',
+        args: { account_id: accountId },
+    });
 
     const promises = [
         getMetapoolAsync,

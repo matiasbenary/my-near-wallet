@@ -84,11 +84,11 @@ const UnstakeForm = () => {
     const stNearAmountMutation = useMutation({
         mutationFn: async (stNear: string) => {
             const stNearYocto = parseNearAmount(stNear);
-            return FungibleTokens.viewFunctionAccount.viewFunction(
-                METAPOOL_CONTRACT_ID,
-                'get_near_amount_sell_stnear',
-                { stnear_to_sell: stNearYocto }
-            );
+            return FungibleTokens.viewFunctionAccount.viewFunction({
+                contractId: METAPOOL_CONTRACT_ID,
+                methodName: 'get_near_amount_sell_stnear',
+                args: { stnear_to_sell: stNearYocto },
+            });
         },
         mutationKey: ['stNearAmountMutation'],
         onSuccess: (res) => {

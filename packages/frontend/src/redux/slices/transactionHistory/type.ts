@@ -76,13 +76,9 @@ export interface ITxFunctionCall {
     method_name: TxMethodName;
 }
 
-interface WithReceipt {
-    receipts: IReceipt[];
-}
+export interface ITransactionDetail extends FinalExecutionOutcome {}
 
-export interface ITransactionDetail extends FinalExecutionOutcome, WithReceipt {}
-
-export interface ITransactionListItem extends FinalExecutionOutcome, WithReceipt {
+export interface ITransactionListItem extends Omit<FinalExecutionOutcome, 'receipts'> {
     metaData: IMetaData;
     receipts: IReceipt[];
 }

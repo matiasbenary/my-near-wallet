@@ -3,6 +3,7 @@ import { parseSeedPhrase } from 'near-seed-phrase';
 
 import CONFIG from '../config';
 import { CoreIndexerAdapter } from '../services/coreIndexer/CoreIndexerAdapter';
+import { KeyPairString } from 'near-api-js/lib/utils';
 
 export async function getAccountIds(publicKey, waitAllIndexer?: boolean) {
     const coreIndexerAdapter = CoreIndexerAdapter.getInstance(
@@ -16,7 +17,7 @@ export async function getAccountIds(publicKey, waitAllIndexer?: boolean) {
 
 export async function getAccountIdsBySeedPhrase(seedPhrase) {
     const { secretKey } = parseSeedPhrase(seedPhrase);
-    const keyPair = nearApiJs.KeyPair.fromString(secretKey);
+    const keyPair = nearApiJs.KeyPair.fromString(secretKey as KeyPairString);
     const publicKey = keyPair.getPublicKey().toString();
     return getAccountIds(publicKey);
 }

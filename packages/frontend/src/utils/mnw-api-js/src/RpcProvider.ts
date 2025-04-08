@@ -60,7 +60,8 @@ export class RpcProvider extends JsonRpcProvider {
         this.retryConfig = retryConfig;
     }
 
-    async sendJsonRpc<T>(method: string, params: object): Promise<T> {
+    async sendJsonRpc<T>(...args): Promise<T> {
+        const [method, params, ...rest] = args;
         const requestBody = {
             method,
             params,
@@ -68,6 +69,7 @@ export class RpcProvider extends JsonRpcProvider {
             jsonrpc: '2.0',
         };
 
+        // debugger;
         let stopRetry = false;
 
         for (
@@ -136,7 +138,7 @@ export class RpcProvider extends JsonRpcProvider {
                         stopRetry = true;
                         throw new TypedError(
                             errorMessage,
-                            getErrorTypeFromErrorMessage(jsonResponse.error.data)
+                            getErrorTypeFromErrorMessage(jsonResponse.error.data, '')
                         );
                     }
                 }
@@ -151,7 +153,8 @@ export class RpcProvider extends JsonRpcProvider {
                 continue;
             }
         }
-
+        console.log('sendJSon', method, params, rest);
+        console.trace('Trace de myFunction');
         throw new TypedError(
             `Exceeded ${this.retryConfig.attempt} attempts for request to ${method}.`,
             'RetriesExceeded'

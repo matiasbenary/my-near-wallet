@@ -34,6 +34,8 @@ import { actions as ledgerActions } from '../redux/slices/ledger';
 import passwordProtectedWallet from '../redux/slices/passwordProtectedWallet/passwordProtectedWallet';
 import sendJson from '../tmp_fetch_send_json';
 import { withAdjustedStorageCost } from './accountsLogic/withAdjustedStorageCost';
+import { KeyPairString } from 'near-api-js/lib/utils';
+import { ContractMethods } from 'near-api-js/lib/contract';
 
 export const WALLET_CREATE_NEW_ACCOUNT_URL = 'create';
 export const WALLET_CREATE_NEW_ACCOUNT_FLOW_URLS = [
@@ -104,8 +106,10 @@ class FundingAccount extends nearApiJs.Account {
 }
 
 class LinkDropContract extends nearApiJs.Contract {
-    get_key_balance;
-    get_key_information;
+    get_key_balance: (args: { key: string }) => Promise<string>;
+    get_key_information: (args: {
+        key: string;
+    }) => Promise<{ yoctoNEAR: string; required_gas: string }>;
 }
 
 export const convertPKForContract = (pk) => {
@@ -730,12 +734,19 @@ export default class Wallet {
     }
 
     async checkLinkdropInfo(fundingContract, fundingKey) {
-        const account = await this.getAccount(fundingContract);
+        // const account = await this.getAccount(fundingContract);
+        const acccount = new nearApiJs.Account(this.connection, fundingContract);
 
-        const contract = new LinkDropContract(account, fundingContract, {
+        const methodOptions = {
             changeMethods: [],
             viewMethods: ['get_key_balance', 'get_key_information'],
-        });
+        };
+
+        const contract = new LinkDropContract(
+            acccount,
+            fundingContract,
+            methodOptions as ContractMethods
+        );
 
         const key = (
             nearApiJs.KeyPair.fromString(fundingKey) as nearApiJs.utils.KeyPairEd25519
@@ -772,20 +783,20 @@ export default class Wallet {
             fundingContract
         );
         try {
-            const key = await account.viewFunction(
-                fundingContract,
-                'get_drop_information',
-                { key: fundingPubKey }
-            );
+            const key = await account.viewFunction({
+                contractId: fundingContract,
+                methodName: 'get_key_information',
+                args: { key: fundingPubKey },
+            });
 
             if (key.required_gas) {
                 return key.required_gas;
             } else {
-                const drop = await account.viewFunction(
-                    fundingContract,
-                    'get_drop_information',
-                    { key: fundingPubKey }
-                );
+                const drop = await account.viewFunction({
+                    contractId: fundingContract,
+                    methodName: 'get_key_information',
+                    args: { key: fundingPubKey },
+                });
                 return drop.required_gas || CONFIG.LINKDROP_GAS;
             }
         } catch {
@@ -813,7 +824,7 @@ export default class Wallet {
                     new_public_key: publicKey.toString().replace('ed25519:', ''),
                 },
                 attachedGas,
-                0
+                BigInt(0)
             ),
         ]);
         return await getNearRpcClient(
@@ -845,7 +856,7 @@ export default class Wallet {
                 'claim',
                 { account_id: accountId },
                 attachedGas,
-                0
+                BigInt(0)
             ),
         ]);
 
@@ -1347,7 +1358,9 @@ export default class Wallet {
         const { seedPhrase } = generateSeedPhrase();
         const { secretKey } = parseSeedPhrase(seedPhrase);
         const recoveryKeyPair: nearApiJs.utils.KeyPairEd25519 =
-            nearApiJs.KeyPair.fromString(secretKey) as nearApiJs.utils.KeyPairEd25519;
+            nearApiJs.KeyPair.fromString(
+                secretKey as KeyPairString
+            ) as nearApiJs.utils.KeyPairEd25519;
         const implicitAccountId = Buffer.from(recoveryKeyPair.publicKey.data).toString(
             'hex'
         );

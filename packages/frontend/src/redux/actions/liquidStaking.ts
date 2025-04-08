@@ -53,7 +53,7 @@ export const liquidUnStake = async ({ contractId, amountInYocto, minExpectInYoct
                     min_expected_near: minExpectInYocto,
                 },
                 new BN(METAPOOL_STAKING_GAS),
-                '0'
+                BigInt('0')
             ),
         ],
     });
@@ -70,7 +70,7 @@ export const delayedUnstake = async ({ contractId, amountInYocto }) => {
                     amount: amountInYocto,
                 },
                 new BN(+CONFIG.STAKING_GAS_BASE * 5),
-                '0'
+                BigInt('0')
             ),
         ],
     });
@@ -80,7 +80,9 @@ export const delayedUnstake = async ({ contractId, amountInYocto }) => {
 export const liquidWithdrawAll = async ({ contractId }) => {
     const result = await dispatchTransactionExecutor({
         receiverId: contractId,
-        actions: [functionCall('withdraw_all', {}, new BN(METAPOOL_STAKING_GAS), '0')],
+        actions: [
+            functionCall('withdraw_all', {}, new BN(METAPOOL_STAKING_GAS), BigInt('0')),
+        ],
     });
     return result;
 };

@@ -18,23 +18,26 @@ export default class NonFungibleTokens {
     };
 
     static getMetadata = async (contractName) => {
-        return this.viewFunctionAccount.viewFunction(contractName, 'nft_metadata');
+        return this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'nft_metadata',
+        });
     };
 
     static getNumberOfTokens = ({ contractName, accountId }) => {
-        return this.viewFunctionAccount.viewFunction(
-            contractName,
-            'nft_supply_for_owner',
-            { account_id: accountId }
-        );
+        return this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'nft_supply_for_owner',
+            args: { account_id: accountId },
+        });
     };
 
     static getToken = async (contractName, tokenId, base_uri) => {
-        const token = await this.viewFunctionAccount.viewFunction(
-            contractName,
-            'nft_token',
-            { token_id: tokenId }
-        );
+        const token = await this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'nft_token',
+            args: { token_id: tokenId },
+        });
 
         // need to restructure response for Mintbase NFTs for consistency with NFT spec
         if (token.id && !token.token_id) {
@@ -57,11 +60,11 @@ export default class NonFungibleTokens {
     };
 
     static getTokenMetadata = async (contractName, tokenId, base_uri) => {
-        let metadata = await this.viewFunctionAccount.viewFunction(
-            contractName,
-            'nft_token_metadata',
-            { token_id: tokenId }
-        );
+        let metadata = await this.viewFunctionAccount.viewFunction({
+            contractId: contractName,
+            methodName: 'nft_token_metadata',
+            args: { token_id: tokenId },
+        });
         let { media, reference } = metadata;
         if (!media && reference) {
             // TODO: Filter which URIs are allowed for privacy?
@@ -77,11 +80,11 @@ export default class NonFungibleTokens {
     static getTokens = async ({ contractName, accountId, base_uri, fromIndex = 0 }) => {
         let tokens;
         try {
-            const tokenIds = await this.viewFunctionAccount.viewFunction(
-                contractName,
-                'nft_tokens_for_owner_set',
-                { account_id: accountId }
-            );
+            const tokenIds = await this.viewFunctionAccount.viewFunction({
+                contractId: contractName,
+                methodName: 'nft_tokens_for_owner_set',
+                args: { account_id: accountId },
+            });
             tokens = await Promise.all(
                 tokenIds
                     .slice(fromIndex, TOKENS_PER_PAGE + fromIndex)
@@ -100,15 +103,15 @@ export default class NonFungibleTokens {
                 throw e;
             }
 
-            tokens = await this.viewFunctionAccount.viewFunction(
-                contractName,
-                'nft_tokens_for_owner',
-                {
+            tokens = await this.viewFunctionAccount.viewFunction({
+                contractId: contractName,
+                methodName: 'nft_tokens_for_owner',
+                args: {
                     account_id: accountId,
                     from_index: fromIndex.toString(),
                     limit: TOKENS_PER_PAGE,
-                }
-            );
+                },
+            });
         }
         // TODO: Separate Redux action for loading image
         return tokens

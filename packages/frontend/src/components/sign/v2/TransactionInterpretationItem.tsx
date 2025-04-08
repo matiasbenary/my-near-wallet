@@ -76,6 +76,7 @@ const TransactionInterpretationItem = ({ transaction }: Props) => {
     );
 
     const hasImage = data?.[txUIRaw.args?.nft_contract_id]?.icon || !!txUI.image;
+    console.log('data', data);
 
     return (
         <div className='account tx-card from no-border'>

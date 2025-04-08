@@ -3,12 +3,12 @@ import sha256 from 'js-sha256';
 import { Account, Connection, InMemorySigner, KeyPair } from 'near-api-js';
 import { InMemoryKeyStore } from 'near-api-js/lib/key_stores';
 import { parseNearAmount } from 'near-api-js/lib/utils/format';
-import { BinaryReader } from 'near-api-js/lib/utils/serialize';
 
 import { WalletError } from './walletError';
 import { getValidatorIds } from './staking';
 import CONFIG from '../config';
 import StakingFarmContracts from '../services/StakingFarmContracts';
+import { BinaryReader } from './aux';
 
 // TODO: Should gas allowance be dynamically calculated
 export const LOCKUP_MIN_BALANCE_OLD = new BN(parseNearAmount('35'));
@@ -105,10 +105,10 @@ async function deleteLockupAccount(lockupAccountId) {
 export async function transferAllFromLockup(missingAmount) {
     const lockupAccountId = getLockupAccountId(this.accountId);
     if (
-        !(await this.wrappedAccount.viewFunction(
-            lockupAccountId,
-            'are_transfers_enabled'
-        ))
+        !(await this.wrappedAccount.viewFunction({
+            contractId: lockupAccountId,
+            methodName: 'are_transfers_enabled',
+        }))
     ) {
         await this.wrappedAccount.functionCall({
             contractId: lockupAccountId,
@@ -117,10 +117,10 @@ export async function transferAllFromLockup(missingAmount) {
         });
     }
 
-    const poolAccountId = await this.wrappedAccount.viewFunction(
-        lockupAccountId,
-        'get_staking_pool_account_id'
-    );
+    const poolAccountId = await this.wrappedAccount.viewFunction({
+        contractId: lockupAccountId,
+        methodName: 'get_staking_pool_account_id',
+    });
     if (poolAccountId) {
         await this.wrappedAccount.functionCall({
             contractId: lockupAccountId,
@@ -130,10 +130,10 @@ export async function transferAllFromLockup(missingAmount) {
     }
 
     const liquidBalance = new BN(
-        await this.wrappedAccount.viewFunction(
-            lockupAccountId,
-            'get_liquid_owners_balance'
-        )
+        await this.wrappedAccount.viewFunction({
+            contractId: lockupAccountId,
+            methodName: 'get_liquid_owners_balance',
+        })
     );
 
     if (missingAmount && !liquidBalance.gt(missingAmount)) {
@@ -158,13 +158,16 @@ export async function transferAllFromLockup(missingAmount) {
     }
 
     const lockedBalance = new BN(
-        await this.wrappedAccount.viewFunction(lockupAccountId, 'get_locked_amount')
+        await this.wrappedAccount.viewFunction({
+            contractId: lockupAccountId,
+            methodName: 'get_locked_amount',
+        })
     );
     if (lockedBalance.eq(new BN(0))) {
-        const stakingPoolBalance = await this.wrappedAccount.viewFunction(
-            lockupAccountId,
-            'get_known_deposited_balance'
-        );
+        const stakingPoolBalance = await this.wrappedAccount.viewFunction({
+            contractId: lockupAccountId,
+            methodName: 'get_known_deposited_balance',
+        });
         const hasUnclaimedTokenRewards =
             poolAccountId &&
             (await StakingFarmContracts.hasUnclaimedRewards({
@@ -243,8 +246,12 @@ async function getAccountBalance(limitedAccountData = false) {
         validatorIds.map(async (validator_id) => {
             const validatorBalance = new BN(
                 await this.wrappedAccount
-                    .viewFunction(validator_id, 'get_account_total_balance', {
-                        account_id: this.accountId,
+                    .viewFunction({
+                        contractId: validator_id,
+                        methodName: 'get_account_total_balance',
+                        args: {
+                            account_id: this.accountId,
+                        },
                     })
                     .catch((err) => {
                         if (
@@ -283,7 +290,10 @@ async function getAccountBalance(limitedAccountData = false) {
 
         const { transfer_poll_account_id, transfers_timestamp } = transferInformation;
         let transfersTimestamp = transfer_poll_account_id
-            ? await this.viewFunction(transfer_poll_account_id, 'get_result')
+            ? await this.viewFunction({
+                  contractId: transfer_poll_account_id,
+                  methodName: 'get_result',
+              })
             : transfers_timestamp;
         const areTransfersEnabled = !!transfersTimestamp;
         transfersTimestamp = transfersTimestamp || (Date.now() * 1000000).toString();
@@ -343,10 +353,10 @@ async function getAccountBalance(limitedAccountData = false) {
 
         let totalBalance = new BN(lockupBalance.total);
         let stakedBalanceLockup = new BN(0);
-        const stakingPoolLockupAccountId = await this.wrappedAccount.viewFunction(
-            lockupAccountId,
-            'get_staking_pool_account_id'
-        );
+        const stakingPoolLockupAccountId = await this.wrappedAccount.viewFunction({
+            contractId: lockupAccountId,
+            methodName: 'get_staking_pool_account_id',
+        });
         const hasUnclaimedTokenBalance =
             stakingPoolLockupAccountId &&
             (await StakingFarmContracts.hasUnclaimedRewards({
@@ -355,11 +365,11 @@ async function getAccountBalance(limitedAccountData = false) {
             }));
         if (stakingPoolLockupAccountId) {
             stakedBalanceLockup = new BN(
-                await this.wrappedAccount.viewFunction(
-                    stakingPoolLockupAccountId,
-                    'get_account_total_balance',
-                    { account_id: lockupAccountId }
-                )
+                await this.wrappedAccount.viewFunction({
+                    contractId: stakingPoolLockupAccountId,
+                    methodName: 'get_account_total_balance',
+                    args: { account_id: lockupAccountId },
+                })
             );
             totalBalance = totalBalance.add(stakedBalanceLockup);
         }
@@ -376,10 +386,10 @@ async function getAccountBalance(limitedAccountData = false) {
         let liquidOwnersBalanceTransfersEnabled = new BN(lockupBalance.total);
         if (!isAccDeletable) {
             liquidOwnersBalanceTransfersEnabled = new BN(
-                await this.wrappedAccount.viewFunction(
-                    lockupAccountId,
-                    'get_liquid_owners_balance'
-                )
+                await this.wrappedAccount.viewFunction({
+                    contractId: lockupAccountId,
+                    methodName: 'get_liquid_owners_balance',
+                })
             );
         }
         const liquidOwnersBalance = areTransfersEnabled

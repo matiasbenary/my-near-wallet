@@ -45,11 +45,11 @@ async function hasStorageDeposit(
 ): Promise<boolean> {
     if (account && tokenId) {
         try {
-            const storageState = await account.viewFunction(
-                tokenId,
-                'storage_balance_of',
-                { account_id: account.accountId }
-            );
+            const storageState = await account.viewFunction({
+                contractId: tokenId,
+                methodName: 'storage_balance_of',
+                args: { account_id: account.accountId },
+            });
 
             return !!storageState;
         } catch (error) {
