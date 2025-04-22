@@ -160,9 +160,9 @@ export default class Wallet {
         this.keyStore = storedStatus.hasEncryptedData
             ? new nearApiJs.keyStores.InMemoryKeyStore()
             : new nearApiJs.keyStores.BrowserLocalStorageKeyStore(
-                window.localStorage,
-                KEY_STORE_PREFIX
-            );
+                  window.localStorage,
+                  KEY_STORE_PREFIX
+              );
 
         // Just to make sure we actually always remove the localstorage values
         // if we are doing encrypted accounts
