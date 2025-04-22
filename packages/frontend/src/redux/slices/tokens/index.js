@@ -142,9 +142,9 @@ const fetchTokens = createAsyncThunk(
         const tokens = {};
 
         const tokensWithBalance = {};
-
+        const auxTokens =  CONFIG.NEAR_WALLET_ENV.startsWith('mainnet')?topTokens:{};
         const defaultContractNames = [
-            ...new Set([...CONFIG.WHITELISTED_CONTRACTS, ...topTokens]),
+            ...new Set([...CONFIG.WHITELISTED_CONTRACTS, ...auxTokens]),
         ];
 
         // await is purposely removed so that redux will not wait for the Promise.all to resolve

@@ -36,6 +36,7 @@ import sendJson from '../tmp_fetch_send_json';
 import { withAdjustedStorageCost } from './accountsLogic/withAdjustedStorageCost';
 import { KeyPairString } from 'near-api-js/lib/utils';
 import { ContractMethods } from 'near-api-js/lib/contract';
+import { InMemoryKeyStore } from 'near-api-js/lib/key_stores';
 
 export const WALLET_CREATE_NEW_ACCOUNT_URL = 'create';
 export const WALLET_CREATE_NEW_ACCOUNT_FLOW_URLS = [
@@ -159,9 +160,9 @@ export default class Wallet {
         this.keyStore = storedStatus.hasEncryptedData
             ? new nearApiJs.keyStores.InMemoryKeyStore()
             : new nearApiJs.keyStores.BrowserLocalStorageKeyStore(
-                  window.localStorage,
-                  KEY_STORE_PREFIX
-              );
+                window.localStorage,
+                KEY_STORE_PREFIX
+            );
 
         // Just to make sure we actually always remove the localstorage values
         // if we are doing encrypted accounts
@@ -276,6 +277,8 @@ export default class Wallet {
     }
 
     async getLocalAccessKey(accountId, accessKeys) {
+        console.log('getLocalAccessKey', accountId, accessKeys);
+
         const localPublicKey = await this.signerIgnoringLedger.getPublicKey(
             accountId,
             CONFIG.NETWORK_ID
@@ -344,7 +347,41 @@ export default class Wallet {
     }
 
     async sendMoney(receiverId, amount) {
-        return (await this.getAccount(this.accountId)).sendMoney(receiverId, amount);
+        // console.log(this.keyStore.getKey(CONFIG.NETWORK_ID, this.accountId));
+
+        // console.log('sendMoney', this.getAccessKeys(this.accountId),this.getPublicKey(this.accountId));
+        const account = await this.getAccount(this.accountId);
+        // this.setKey(account.accountId, account.privateKey);
+        // // console.log(this.keyStore.getKey(CONFIG.NETWORK_ID, this.accountId));
+        // const keyStore = new InMemoryKeyStore();
+
+        // await keyStore.setKey(CONFIG.NETWORK_ID, this.accountId, nearApiJs.KeyPair.fromRandom('ed25519').secretKey);
+        // const connection = nearApiJs.Connection.fromConfig({
+        //     networkId,
+        //     provider: {
+        //         type: "JsonRpcProvider",
+        //         args: { url: nodeUrl },
+        //     },
+        //     signer: { type: "InMemorySigner", keyStore },
+        // });
+
+        // const keyStore = new nearApiJs.keyStores.InMemoryKeyStore();
+        // await keyStore.setKey(CONFIG.NETWORK_ID, this.accountId, keyPair);
+        // const newKeyPair = nearApiJs.KeyPair.fromRandom('ed25519');
+        // const account = new nearApiJs.Account(
+        //     nearApiJs.Connection.fromConfig({
+        //         networkId: NETWORK_ID,
+        //         provider: {
+        //             type: 'JsonRpcProvider',
+        //             args: { url: NODE_URL + '/' },
+        //         },
+        //         signer: new nearApiJs.InMemorySigner(keyStore),
+        //     }),
+        //     accountId
+        // );
+
+        return await account.sendMoney(receiverId, amount);
+        // return (await this.getAccount(this.accountId)).sendMoney(receiverId, amount);
     }
 
     isEmpty() {
@@ -393,7 +430,7 @@ export default class Wallet {
                         it.access_key.permission !== 'FullAccess' &&
                         it.access_key.permission.FunctionCall &&
                         it.access_key.permission.FunctionCall.receiver_id !==
-                            this.accountId
+                        this.accountId
                 ),
                 fullAccessKeys: accessKeys.filter(
                     (it) => it.access_key && it.access_key.permission === 'FullAccess'
@@ -1273,8 +1310,9 @@ export default class Wallet {
     }
 
     async getAccount(accountId, limitedAccountData = false) {
-        const AccountWithAdjustedStorageCost = withAdjustedStorageCost(nearApiJs.Account);
-        let account = new AccountWithAdjustedStorageCost(this.connection, accountId);
+        let account = this.getAccountBasic(accountId);
+
+        console.log("pepe");
 
         const TwoFactorWithAdjustedStorageCost = withAdjustedStorageCost(TwoFactor);
         const has2fa = await TwoFactor.has2faEnabled(account);
@@ -1373,7 +1411,7 @@ export default class Wallet {
         await sendJson(
             'POST',
             CONFIG.ACCOUNT_KITWALLET_HELPER_URL +
-                '/account/initializeRecoveryMethodForTempAccount',
+            '/account/initializeRecoveryMethodForTempAccount',
             body
         );
         return seedPhrase;
@@ -1391,7 +1429,7 @@ export default class Wallet {
             await sendJson(
                 'POST',
                 CONFIG.ACCOUNT_KITWALLET_HELPER_URL +
-                    '/account/initializeRecoveryMethodForTempAccount',
+                '/account/initializeRecoveryMethodForTempAccount',
                 body
             );
         } else {
@@ -1410,7 +1448,7 @@ export default class Wallet {
             await sendJson(
                 'POST',
                 CONFIG.ACCOUNT_KITWALLET_HELPER_URL +
-                    '/account/validateSecurityCodeForTempAccount',
+                '/account/validateSecurityCodeForTempAccount',
                 {
                     accountId: implicitAccountId,
                     method,
@@ -1447,7 +1485,7 @@ export default class Wallet {
                 await sendJson(
                     'POST',
                     CONFIG.ACCOUNT_KITWALLET_HELPER_URL +
-                        '/account/validateSecurityCodeForTempAccount',
+                    '/account/validateSecurityCodeForTempAccount',
                     {
                         ...body,
                         enterpriseRecaptchaToken,

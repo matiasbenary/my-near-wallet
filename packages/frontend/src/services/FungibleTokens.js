@@ -162,10 +162,8 @@ export default class FungibleTokens {
 
     async transfer({ accountId, contractName, amount, receiverId, memo }) {
         // Ensure our awareness of 2FA being enabled is accurate before we submit any transaction(s)
-        const account = await wallet.getAccount(accountId);
-
         if (!contractName || contractName.toUpperCase() === CONFIG.NEAR_ID) {
-            return account.sendMoney(receiverId, amount);
+            return await wallet.sendMoney(receiverId, amount);
         }
 
         const isStorageTransferRequired = await this.isStorageDepositRequired({
@@ -175,6 +173,8 @@ export default class FungibleTokens {
 
         if (isStorageTransferRequired) {
             try {
+                const account = await wallet.getAccount(accountId);
+
                 await this.transferStorageDeposit({
                     account,
                     contractName,

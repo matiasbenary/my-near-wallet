@@ -98,6 +98,8 @@ const SendContainerWrapper = ({ match }) => {
                         Mixpanel.people.set({ last_send_token: new Date().toString() });
                     },
                     (e) => {
+                        console.log('Error sending token');
+                        console.trace('Trace de myFunction');
                         dispatch(
                             showCustomAlert({
                                 success: false,
