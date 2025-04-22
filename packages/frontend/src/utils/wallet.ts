@@ -8,6 +8,7 @@ import { generateSeedPhrase, parseSeedPhrase } from 'near-seed-phrase';
 
 import { decorateWithLockup } from './account-with-lockup';
 import {
+    IDecryptedAccount,
     removeAllAccountsPrivateKey,
     retrieveAllAccountsPrivateKey,
     storedWalletDataActions,
@@ -182,8 +183,10 @@ export default class Wallet {
                 if (ledgerKey) {
                     return ledgerKey;
                 }
-
-                return await getSignerIgnoringLedger().getPublicKey(accountId, networkId);
+                const signer = await getSignerIgnoringLedger();
+                const publicKey = await signer.getPublicKey(accountId, networkId);
+                console.log("Public Key for Signer Ignoring Ledger: ", publicKey);
+                return publicKey;
             },
             async signMessage(message, accountId, networkId) {
                 if (await wallet.getLedgerKey(accountId)) {
@@ -347,39 +350,7 @@ export default class Wallet {
     }
 
     async sendMoney(receiverId, amount) {
-        // console.log(this.keyStore.getKey(CONFIG.NETWORK_ID, this.accountId));
-
-        // console.log('sendMoney', this.getAccessKeys(this.accountId),this.getPublicKey(this.accountId));
         const account = await this.getAccount(this.accountId);
-        // this.setKey(account.accountId, account.privateKey);
-        // // console.log(this.keyStore.getKey(CONFIG.NETWORK_ID, this.accountId));
-        // const keyStore = new InMemoryKeyStore();
-
-        // await keyStore.setKey(CONFIG.NETWORK_ID, this.accountId, nearApiJs.KeyPair.fromRandom('ed25519').secretKey);
-        // const connection = nearApiJs.Connection.fromConfig({
-        //     networkId,
-        //     provider: {
-        //         type: "JsonRpcProvider",
-        //         args: { url: nodeUrl },
-        //     },
-        //     signer: { type: "InMemorySigner", keyStore },
-        // });
-
-        // const keyStore = new nearApiJs.keyStores.InMemoryKeyStore();
-        // await keyStore.setKey(CONFIG.NETWORK_ID, this.accountId, keyPair);
-        // const newKeyPair = nearApiJs.KeyPair.fromRandom('ed25519');
-        // const account = new nearApiJs.Account(
-        //     nearApiJs.Connection.fromConfig({
-        //         networkId: NETWORK_ID,
-        //         provider: {
-        //             type: 'JsonRpcProvider',
-        //             args: { url: NODE_URL + '/' },
-        //         },
-        //         signer: new nearApiJs.InMemorySigner(keyStore),
-        //     }),
-        //     accountId
-        // );
-
         return await account.sendMoney(receiverId, amount);
         // return (await this.getAccount(this.accountId)).sendMoney(receiverId, amount);
     }
@@ -907,7 +878,7 @@ export default class Wallet {
         });
     }
 
-    async saveAccountKeyPair({ accountId, recoveryKeyPair }) {
+    async saveAccountKeyPair({ accountId, recoveryKeyPair }: {accountId: string, recoveryKeyPair: KeyPairString}) {
         await this.keyStore.setKey(this.connection.networkId, accountId, recoveryKeyPair);
     }
 
@@ -919,8 +890,8 @@ export default class Wallet {
         // Step 4: Set the key to the wallet InMemoryKeystore for transaction signing
         await Promise.all(
             sensitiveData.accounts.map(
-                async (account) =>
-                    await this.setKey(account.accountId, account.privateKey)
+                async (account: IDecryptedAccount) =>
+                    await this.setKey(account.accountId, nearApiJs.KeyPair.fromString(`ed25519:${account.privateKey}`))
             )
         );
     }
@@ -1008,7 +979,7 @@ export default class Wallet {
         setAccountConfirmed(this.accountId, true);
     }
 
-    async setKey(accountId, keyPair) {
+    async setKey(accountId: string, keyPair: nearApiJs.KeyPair) {
         if (keyPair) {
             await this.keyStore.setKey(CONFIG.NETWORK_ID, accountId, keyPair);
         }
@@ -1311,8 +1282,6 @@ export default class Wallet {
 
     async getAccount(accountId, limitedAccountData = false) {
         let account = this.getAccountBasic(accountId);
-
-        console.log("pepe");
 
         const TwoFactorWithAdjustedStorageCost = withAdjustedStorageCost(TwoFactor);
         const has2fa = await TwoFactor.has2faEnabled(account);
@@ -1866,10 +1835,8 @@ export default class Wallet {
             const recreateTransaction = account.deployMultisig || true;
             if (recreateTransaction) {
                 try {
-                    ({ status, transaction } = await account.signAndSendTransaction({
-                        receiverId,
-                        actions,
-                    }));
+                    const [ , signedTx] = await account.signTransaction(receiverId, actions);
+                    ({ status, transaction } = await this.connection.provider.sendTransactionUntil(signedTx, 'INCLUDED_FINAL'));
                 } catch (error) {
                     if (error.message.includes('Exceeded the prepaid gas')) {
                         throw new WalletError(error.message, error.code, {
